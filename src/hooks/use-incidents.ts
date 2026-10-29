@@ -1,25 +1,34 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DEMO_INCIDENTS } from "@/data/demo";
-import { loadLocalReports, loadStatusOverrides, mergeIncidents, type Incident } from "@/lib/incidents";
+import { mergeIncidents } from "@/lib/incidents";
+import { fetchSharedIncidents } from "@/lib/incidents-api";
+
+export const INCIDENTS_KEY = ["incidents"] as const;
 
 /**
- * All incidents (demo + saved in this browser). localStorage is read after the
- * page loads, so `ready` is false on the very first render.
+ * All incidents: built-in demo samples + real shared reports from the database.
+ * `isLoading` / `error` describe the database read only; demo data is always available.
  */
 export function useIncidents() {
-  const [incidents, setIncidents] = useState<Incident[]>(DEMO_INCIDENTS);
-  const [ready, setReady] = useState(false);
+  const query = useQuery({
+    queryKey: INCIDENTS_KEY,
+    queryFn: fetchSharedIncidents,
+    refetchInterval: 30_000, // keeps the dashboard in sync with other devices
+  });
+
+  // Fixed "now" on the server render, real time after the page loads (avoids mismatches).
   const [now, setNow] = useState(() => new Date("2026-10-29T00:00:00Z").getTime());
+  useEffect(() => setNow(Date.now()), [query.dataUpdatedAt]);
 
-  const refresh = useCallback(() => {
-    setIncidents(mergeIncidents(DEMO_INCIDENTS, loadLocalReports(), loadStatusOverrides()));
-    setNow(Date.now());
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { incidents, ready, now, refresh };
+  const shared = query.data ?? [];
+  return {
+    incidents: mergeIncidents(DEMO_INCIDENTS, shared),
+    sharedCount: shared.length,
+    isLoading: query.isPending,
+    error: query.error,
+    refetch: query.refetch,
+    isFetching: query.isFetching,
+    now,
+  };
 }
