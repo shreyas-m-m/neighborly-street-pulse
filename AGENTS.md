@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Incident shape, localStorage helpers and the priority-score heuristic live in src/lib/incidents.ts; pages read data via useIncidents so all screens share one model.
