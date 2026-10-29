@@ -1,4 +1,4 @@
-// Shared incident model, localStorage helpers and the priority-score heuristic.
+// Shared incident model, demo/shared merge and the priority-score heuristic. Database access lives in incidents-api.ts.
 // Everything here is plain TypeScript — no backend, no AI.
 
 export type CategoryId = "garbage" | "roads" | "water" | "lights";
