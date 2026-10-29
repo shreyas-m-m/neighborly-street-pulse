@@ -57,7 +57,7 @@ function ReportPage() {
         next[key] ??= issue.message;
       }
       setErrors(next);
-      document.getElementById(Object.keys(next)[0])?.focus();
+      document.getElementById(Object.keys(next)[0] ?? "")?.focus();
       return;
     }
     const incident: Incident = {

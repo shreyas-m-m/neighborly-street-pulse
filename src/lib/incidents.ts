@@ -63,7 +63,7 @@ export function setIncidentStatus(id: string, status: Status) {
 
 /** Seed data + local reports, with any saved status changes applied. */
 export function mergeIncidents(seed: Incident[], local: Incident[], overrides: Record<string, Status>): Incident[] {
-  return [...local, ...seed].map((i) => (overrides[i.id] ? { ...i, status: overrides[i.id] } : i));
+  return [...local, ...seed].map((i): Incident => { const s = overrides[i.id]; return s ? { ...i, status: s } : i; });
 }
 
 export function generateIncidentId(): string {

@@ -159,7 +159,7 @@ function Dashboard() {
             <Input className="pl-9" placeholder="Search title, location or ID" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search incidents" />
           </div>
           <FilterSelect label="Category" value={category} onChange={setCategory} options={CATEGORIES.map((c) => ({ value: c.id, label: c.name }))} />
-          <FilterSelect label="Severity" value={severity} onChange={setSeverity} options={SEVERITIES.map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }))} />
+          <FilterSelect label="Severity" value={severity} onChange={setSeverity} options={SEVERITIES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))} />
           <FilterSelect label="Status" value={status} onChange={setStatus} options={STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))} />
           <FilterSelect label="Location" value={area} onChange={setArea} options={areas.map((a) => ({ value: a, label: a }))} />
         </div>
