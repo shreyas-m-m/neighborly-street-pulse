@@ -1,4 +1,5 @@
-import { SEVERITY_STYLES, type Severity } from "@/data/demo";
+import { SEVERITY_STYLES } from "@/data/demo";
+import type { Severity } from "@/lib/incidents";
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
   return (
