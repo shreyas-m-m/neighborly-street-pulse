@@ -20,4 +20,25 @@ describe("priority score heuristic", () => {
     expect(Number.isNaN(s.total)).toBe(false);
     expect(s.total).toBe(40);
   });
+
+  it("ranks critical incidents above low-severity incidents with otherwise equal inputs", () => {
+    const critical = computeScore({ ...base, severity: "critical" }, [base], NOW);
+    const low = computeScore({ ...base, severity: "low" }, [base], NOW);
+    expect(critical.total).toBeGreaterThan(low.total);
+  });
+  it("does not give resolved incidents nearby-report points from resolved neighbours", () => {
+    const resolved = { ...base, status: "resolved" as const };
+    const resolvedNeighbours = neighbours.map((item) => ({ ...item, status: "resolved" as const }));
+    expect(computeScore(resolved, [resolved, ...resolvedNeighbours], NOW).nearby).toBe(0);
+  });
+  it("does not award time points for future timestamps", () => {
+    const score = computeScore({ ...base, createdAt: "2026-11-01T00:00:00Z" }, [base], NOW);
+    expect(score.time).toBe(0);
+  });
+  it("clamps negative people counts and keeps the score within 0–100", () => {
+    const score = computeScore({ ...base, peopleAffected: -50 }, [base], NOW);
+    expect(score.people).toBe(0);
+    expect(score.total).toBeGreaterThanOrEqual(0);
+    expect(score.total).toBeLessThanOrEqual(100);
+  });
 });
