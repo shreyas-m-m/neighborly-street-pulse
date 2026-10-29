@@ -15,6 +15,7 @@ export function useIncidents() {
     queryKey: INCIDENTS_KEY,
     queryFn: fetchSharedIncidents,
     refetchInterval: 30_000, // keeps the dashboard in sync with other devices
+    retry: 1, // the database client already retries; show the error message quickly instead of spinning
   });
 
   // Fixed "now" on the server render, real time after the page loads (avoids mismatches).
