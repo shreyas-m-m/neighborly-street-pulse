@@ -1,4 +1,4 @@
-// Shared incident model, localStorage helpers and the priority-score heuristic.
+// Shared incident model, demo/shared merge and the priority-score heuristic. Database access lives in incidents-api.ts.
 // Everything here is plain TypeScript — no backend, no AI.
 
 export type CategoryId = "garbage" | "roads" | "water" | "lights";
@@ -15,7 +15,7 @@ export interface Incident {
   description: string;
   peopleAffected: number;
   createdAt: string; // ISO date string
-  source: "demo" | "local";
+  source: "demo" | "shared"; // demo = built-in sample, shared = real report in the database
 }
 
 export const SEVERITIES: Severity[] = ["critical", "high", "medium", "low"];
@@ -26,50 +26,9 @@ export const STATUS_LABELS: Record<Status, string> = {
   resolved: "Resolved",
 };
 
-/* ---------------- localStorage ---------------- */
-
-const REPORTS_KEY = "datapulse.reports";
-const STATUS_KEY = "datapulse.statusOverrides";
-
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function loadLocalReports(): Incident[] {
-  const list = readJson<Incident[]>(REPORTS_KEY, []);
-  return Array.isArray(list) ? list : [];
-}
-
-export function saveLocalReport(incident: Incident) {
-  const list = loadLocalReports();
-  window.localStorage.setItem(REPORTS_KEY, JSON.stringify([incident, ...list]));
-}
-
-export function loadStatusOverrides(): Record<string, Status> {
-  return readJson<Record<string, Status>>(STATUS_KEY, {});
-}
-
-export function setIncidentStatus(id: string, status: Status) {
-  const overrides = loadStatusOverrides();
-  overrides[id] = status;
-  window.localStorage.setItem(STATUS_KEY, JSON.stringify(overrides));
-}
-
-/** Seed data + local reports, with any saved status changes applied. */
-export function mergeIncidents(seed: Incident[], local: Incident[], overrides: Record<string, Status>): Incident[] {
-  return [...local, ...seed].map((i): Incident => { const s = overrides[i.id]; return s ? { ...i, status: s } : i; });
-}
-
-export function generateIncidentId(): string {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `INC-${stamp}${rand}`;
+/** Demo incidents first-class alongside shared reports; database rows come first. */
+export function mergeIncidents(seed: Incident[], shared: Incident[]): Incident[] {
+  return [...shared, ...seed];
 }
 
 /* ---------------- Hotspots ---------------- */

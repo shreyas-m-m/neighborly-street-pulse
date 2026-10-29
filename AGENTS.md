@@ -9,4 +9,5 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Incident shape, localStorage helpers and the priority-score heuristic live in src/lib/incidents.ts; pages read data via useIncidents so all screens share one model.
+- Incident shape and priority-score heuristic live in src/lib/incidents.ts; database reads/writes live in src/lib/incidents-api.ts; pages read via useIncidents (TanStack Query) so all screens share one source. Demo seed incidents stay in code, never in the database, so they remain distinguishable from real reports.
+- The incidents table is a public no-login demo: anon may read, insert content columns only, and update the status column only (column-level GRANTs enforce this).

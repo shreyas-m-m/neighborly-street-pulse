@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
-import { CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES } from "@/data/demo";
-import { SEVERITIES, generateIncidentId, saveLocalReport, type Incident } from "@/lib/incidents";
+import { SEVERITIES } from "@/lib/incidents";
+import { createIncident } from "@/lib/incidents-api";
+import { INCIDENTS_KEY } from "@/hooks/use-incidents";
 
 export const Route = createFileRoute("/report")({
   head: () => ({
@@ -41,6 +44,15 @@ function ReportPage() {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: createIncident,
+    onSuccess: (incident) => {
+      queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
+      setCreatedId(incident.id);
+      window.scrollTo({ top: 0 });
+    },
+  });
 
   const set = (field: Field, value: string) => {
     setValues((v) => ({ ...v, [field]: value }));
@@ -60,16 +72,7 @@ function ReportPage() {
       document.getElementById(Object.keys(next)[0] ?? "")?.focus();
       return;
     }
-    const incident: Incident = {
-      ...result.data,
-      id: generateIncidentId(),
-      status: "open",
-      createdAt: new Date().toISOString(),
-      source: "local",
-    };
-    saveLocalReport(incident);
-    setCreatedId(incident.id);
-    window.scrollTo({ top: 0 });
+    mutation.mutate(result.data);
   };
 
   if (createdId) {
@@ -78,12 +81,12 @@ function ReportPage() {
         <CheckCircle2 className="mx-auto h-14 w-14 text-sev-low" />
         <h1 className="mt-4 text-3xl font-bold text-primary">Report submitted</h1>
         <p className="mt-3 text-muted-foreground">
-          Your incident ID is <strong className="font-mono text-foreground">{createdId}</strong>. It is saved in this browser only.
+          Your incident ID is <strong className="font-mono text-foreground">{createdId}</strong>. It is saved to the shared database and visible on every device.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild><Link to="/incidents/$id" params={{ id: createdId }}>View incident</Link></Button>
           <Button asChild variant="outline"><Link to="/dashboard">Go to dashboard</Link></Button>
-          <Button variant="ghost" onClick={() => { setValues(EMPTY); setCreatedId(null); }}>Report another</Button>
+          <Button variant="ghost" onClick={() => { setValues(EMPTY); setCreatedId(null); mutation.reset(); }}>Report another</Button>
         </div>
       </section>
     );
@@ -99,7 +102,7 @@ function ReportPage() {
       <p className="mt-2 text-muted-foreground">Tell us what's wrong and where. Fields marked * are required.</p>
       <div className="mt-4 flex gap-2 rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        Prototype: reports are saved only in this browser (localStorage), not sent to any server.
+        Hackathon demo: reports go to a shared public database, so anyone using the app can see them. Please don't include personal information.
       </div>
 
       <form onSubmit={onSubmit} noValidate className="mt-8 space-y-6 rounded-xl border bg-card p-6">
@@ -154,7 +157,15 @@ function ReportPage() {
           {err("peopleAffected")}
         </div>
 
-        <Button type="submit" size="lg" className="w-full sm:w-auto">Submit report</Button>
+        {mutation.isError && (
+          <div role="alert" className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <span>Your report was not saved: {mutation.error.message}. Please check your connection and try again.</span>
+          </div>
+        )}
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={mutation.isPending}>
+          {mutation.isPending ? <><Loader2 className="animate-spin" /> Saving…</> : "Submit report"}
+        </Button>
       </form>
     </section>
   );

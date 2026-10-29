@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Inbox, ListChecks, MapPin, Search, SearchX } from "lucide-react";
+import { AlertCircle, AlertTriangle, Loader2, RefreshCw, CheckCircle2, Inbox, ListChecks, MapPin, Search, SearchX } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ const SEV_COLORS = { critical: "var(--sev-critical)", high: "var(--sev-high)", m
 const ALL = "all";
 
 function Dashboard() {
-  const { incidents, now } = useIncidents();
+  const { incidents, now, sharedCount, isLoading, error, refetch, isFetching } = useIncidents();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
   const [severity, setSeverity] = useState(ALL);
@@ -82,10 +82,28 @@ function Dashboard() {
             <h1 className="text-3xl font-bold text-primary">Incident Dashboard</h1>
             <Badge className="bg-sev-medium text-foreground hover:bg-sev-medium">DEMO DATA</Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">Sample incidents plus any reports saved in this browser.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Built-in sample incidents (marked "Demo") plus {isLoading ? "…" : sharedCount} real report{sharedCount === 1 ? "" : "s"} from the shared database.
+          </p>
         </div>
-        <Button asChild><Link to="/report">Report an Issue</Link></Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching} aria-label="Refresh incidents">
+            <RefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh
+          </Button>
+          <Button asChild><Link to="/report">Report an Issue</Link></Button>
+        </div>
       </div>
+
+      {isLoading && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading shared reports…</p>
+      )}
+      {error && (
+        <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+          <AlertCircle className="h-4 w-4 text-destructive" />
+          <span>Couldn't load shared reports ({error.message}). Only demo data is shown.</span>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>Try again</Button>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -189,7 +207,7 @@ function Dashboard() {
                   <Link to="/incidents/$id" params={{ id: i.id }} className="grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-3 hover:bg-secondary md:grid-cols-12">
                     <span className="col-span-1 grid h-10 w-10 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground" title="Priority score (0–100)">{i.score}</span>
                     <div className="min-w-0 md:col-span-5">
-                      <p className="truncate font-medium">{i.title}</p>
+                      <p className="flex items-center gap-2 truncate font-medium">{i.title}{i.source === "demo" && <span className="shrink-0 rounded border px-1.5 text-[10px] font-semibold uppercase text-muted-foreground">Demo</span>}</p>
                       <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{i.location} · <span className="font-mono">{i.id}</span></p>
                     </div>
                     <span className="col-span-2 col-start-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground md:col-start-auto md:contents">

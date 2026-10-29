@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, MapPin, SearchX, Users } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Loader2, MapPin, SearchX, Users } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CATEGORIES } from "@/data/demo";
-import { useIncidents } from "@/hooks/use-incidents";
-import { STATUSES, STATUS_LABELS, computeScore, setIncidentStatus } from "@/lib/incidents";
+import { INCIDENTS_KEY, useIncidents } from "@/hooks/use-incidents";
+import { updateIncidentStatus } from "@/lib/incidents-api";
+import { STATUSES, STATUS_LABELS, computeScore, type Status } from "@/lib/incidents";
 
 export const Route = createFileRoute("/incidents/$id")({
   head: ({ params }) => ({
@@ -22,7 +24,12 @@ export const Route = createFileRoute("/incidents/$id")({
 
 function IncidentPage() {
   const { id } = Route.useParams();
-  const { incidents, ready, now, refresh } = useIncidents();
+  const { incidents, isLoading, error, refetch, now } = useIncidents();
+  const queryClient = useQueryClient();
+  const statusMutation = useMutation({
+    mutationFn: ({ status }: { status: Status }) => updateIncidentStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY }),
+  });
   const incident = incidents.find((i) => i.id === id);
 
   const back = (
@@ -32,12 +39,20 @@ function IncidentPage() {
   );
 
   if (!incident) {
-    if (!ready) return <div className="mx-auto max-w-4xl px-4 py-12 text-muted-foreground">Loading…</div>;
+    if (isLoading) return <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-12 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading incident…</div>;
+    if (error) return (
+      <section className="mx-auto max-w-xl px-4 py-20 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+        <h1 className="mt-4 text-2xl font-bold text-primary">Couldn't load this incident</h1>
+        <p className="mt-2 text-muted-foreground">{error.message}</p>
+        <Button className="mt-6" onClick={() => refetch()}>Try again</Button>
+      </section>
+    );
     return (
       <section className="mx-auto max-w-xl px-4 py-20 text-center">
         <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-bold text-primary">Incident not found</h1>
-        <p className="mt-2 text-muted-foreground">No incident with ID <span className="font-mono">{id}</span> exists in the demo data or this browser.</p>
+        <p className="mt-2 text-muted-foreground">No incident with ID <span className="font-mono">{id}</span> exists in the demo data or the shared database.</p>
         <Button asChild className="mt-6"><Link to="/dashboard">Back to dashboard</Link></Button>
       </section>
     );
@@ -57,7 +72,7 @@ function IncidentPage() {
       {back}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm text-muted-foreground">{incident.id}</span>
-        <Badge variant="outline">{incident.source === "demo" ? "Demo data" : "Saved in this browser"}</Badge>
+        <Badge variant="outline">{incident.source === "demo" ? "Demo data" : "Shared report"}</Badge>
       </div>
       <h1 className="mt-2 text-3xl font-bold text-primary">{incident.title}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -80,19 +95,31 @@ function IncidentPage() {
 
           <div className="rounded-xl border bg-card p-6">
             <h2 className="font-semibold">Update status</h2>
-            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Incident status">
-              {STATUSES.map((s) => (
-                <Button
-                  key={s}
-                  variant={incident.status === s ? "default" : "outline"}
-                  aria-pressed={incident.status === s}
-                  onClick={() => { setIncidentStatus(incident.id, s); refresh(); }}
-                >
-                  {STATUS_LABELS[s]}
-                </Button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">Saved in this browser and reflected on the dashboard.</p>
+            {incident.source === "demo" ? (
+              <p className="mt-2 text-sm text-muted-foreground">This is a built-in demo incident, so its status can't be changed. Submit a real report to try status updates.</p>
+            ) : (
+              <>
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Incident status">
+                  {STATUSES.map((s) => (
+                    <Button
+                      key={s}
+                      variant={incident.status === s ? "default" : "outline"}
+                      aria-pressed={incident.status === s}
+                      disabled={statusMutation.isPending}
+                      onClick={() => statusMutation.mutate({ status: s })}
+                    >
+                      {statusMutation.isPending && statusMutation.variables?.status === s && <Loader2 className="animate-spin" />}
+                      {STATUS_LABELS[s]}
+                    </Button>
+                  ))}
+                </div>
+                {statusMutation.isError ? (
+                  <p role="alert" className="mt-2 text-sm text-destructive">Status not saved: {statusMutation.error.message}</p>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">Saved to the shared database and shown on every device's dashboard.</p>
+                )}
+              </>
+            )}
           </div>
         </div>
 
