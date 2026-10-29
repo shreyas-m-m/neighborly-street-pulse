@@ -54,7 +54,7 @@ function Index() {
               <Badge variant="outline">Demo data</Badge>
             </div>
             <ul className="mt-4 divide-y">
-              {DEMO_INCIDENTS.map((inc) => (
+              {DEMO_INCIDENTS.slice(0, 4).map((inc) => (
                 <li key={inc.id}>
                   <Link to="/incidents/$id" params={{ id: inc.id }} className="flex items-center justify-between gap-3 py-3 hover:opacity-80">
                     <div className="min-w-0">
