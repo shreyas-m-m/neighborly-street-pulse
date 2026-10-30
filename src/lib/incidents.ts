@@ -16,6 +16,9 @@ export interface Incident {
   peopleAffected: number;
   createdAt: string; // ISO date string
   source: "demo" | "shared"; // demo = built-in sample, shared = real report in the database
+  originalPhotoPath?: string | null; // storage path in the incident-photos bucket
+  resolutionPhotoPath?: string | null;
+  resolutionNote?: string | null;
 }
 
 export const SEVERITIES: Severity[] = ["critical", "high", "medium", "low"];
