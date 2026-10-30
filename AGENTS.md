@@ -10,4 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Incident shape and priority-score heuristic live in src/lib/incidents.ts; database reads/writes live in src/lib/incidents-api.ts; pages read via useIncidents (TanStack Query) so all screens share one source. Demo seed incidents stay in code, never in the database, so they remain distinguishable from real reports.
-- The incidents table is a public no-login demo: anon may read, insert content columns only, and update the status column only (column-level GRANTs enforce this).
+- The incidents table is a public no-login demo: anon may read, insert content columns only, and update status/resolution columns only (column-level GRANTs enforce this). A trigger blocks moving to resolved without a resolution photo.
+- Incident photos live in the private incident-photos bucket under original/ or resolution/ with random names; rows store only the path and pages show them via short-lived signed URLs. Anon may upload new files and read, never overwrite or delete.
