@@ -1,13 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertCircle, ArrowLeft, Calendar, Loader2, MapPin, SearchX, Users } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CATEGORIES } from "@/data/demo";
 import { INCIDENTS_KEY, useIncidents } from "@/hooks/use-incidents";
-import { updateIncidentStatus } from "@/lib/incidents-api";
+import { getPhotoUrl, resolveIncident, updateIncidentStatus } from "@/lib/incidents-api";
 import { STATUSES, STATUS_LABELS, computeScore, type Status } from "@/lib/incidents";
 
 export const Route = createFileRoute("/incidents/$id")({
@@ -29,6 +33,19 @@ function IncidentPage() {
   const statusMutation = useMutation({
     mutationFn: ({ status }: { status: Status }) => updateIncidentStatus(id, status),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY }),
+  });
+  const [resolving, setResolving] = useState(false);
+  const [resPhoto, setResPhoto] = useState<File | null>(null);
+  const [resNote, setResNote] = useState("");
+  const resolveMutation = useMutation({
+    mutationFn: () => {
+      if (!resPhoto) throw new Error("Please add a resolution photo first.");
+      return resolveIncident(id, resPhoto, resNote);
+    },
+    onSuccess: () => {
+      setResolving(false); setResPhoto(null); setResNote("");
+      return queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
+    },
   });
   const incident = incidents.find((i) => i.id === id);
 
@@ -93,6 +110,17 @@ function IncidentPage() {
             </dl>
           </div>
 
+          {(incident.originalPhotoPath || incident.resolutionPhotoPath || incident.resolutionNote) && (
+            <div className="rounded-xl border bg-card p-6">
+              <h2 className="font-semibold">{incident.resolutionPhotoPath ? "Before / After" : "Photo"}</h2>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                {incident.originalPhotoPath && <StoredPhoto path={incident.originalPhotoPath} caption="Before" alt={`Before: reported issue "${incident.title}" at ${incident.location}`} />}
+                {incident.resolutionPhotoPath && <StoredPhoto path={incident.resolutionPhotoPath} caption="After" alt={`After: resolution of "${incident.title}" at ${incident.location}`} />}
+              </div>
+              {incident.resolutionNote && <p className="mt-4 text-sm"><span className="font-medium">Resolution note:</span> <span className="whitespace-pre-line text-muted-foreground">{incident.resolutionNote}</span></p>}
+            </div>
+          )}
+
           <div className="rounded-xl border bg-card p-6">
             <h2 className="font-semibold">Update status</h2>
             {incident.source === "demo" ? (
@@ -103,20 +131,43 @@ function IncidentPage() {
                   {STATUSES.map((s) => (
                     <Button
                       key={s}
-                      variant={incident.status === s ? "default" : "outline"}
+                      variant={incident.status === s || (s === "resolved" && resolving) ? "default" : "outline"}
                       aria-pressed={incident.status === s}
-                      disabled={statusMutation.isPending}
-                      onClick={() => statusMutation.mutate({ status: s })}
+                      disabled={statusMutation.isPending || resolveMutation.isPending}
+                      onClick={() => {
+                        if (s === "resolved" && incident.status !== "resolved") { setResolving(true); return; }
+                        setResolving(false);
+                        statusMutation.mutate({ status: s });
+                      }}
                     >
                       {statusMutation.isPending && statusMutation.variables?.status === s && <Loader2 className="animate-spin" />}
                       {STATUS_LABELS[s]}
                     </Button>
                   ))}
                 </div>
+                {resolving && (
+                  <form
+                    className="mt-4 space-y-4 rounded-lg border p-4"
+                    onSubmit={(e) => { e.preventDefault(); resolveMutation.mutate(); }}
+                  >
+                    <PhotoPicker label="Resolution photo *" hint="Required. Show the fixed issue. JPEG, PNG or WebP, up to 5 MB." file={resPhoto} onChange={setResPhoto} disabled={resolveMutation.isPending} />
+                    <div>
+                      <Label htmlFor="resolution-note">Resolution note (optional)</Label>
+                      <Textarea id="resolution-note" className="mt-1.5" rows={3} maxLength={500} value={resNote} onChange={(e) => setResNote(e.target.value)} disabled={resolveMutation.isPending} />
+                    </div>
+                    {resolveMutation.isError && <p role="alert" className="text-sm text-destructive">Not marked resolved: {resolveMutation.error.message}</p>}
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={!resPhoto || resolveMutation.isPending}>
+                        {resolveMutation.isPending && <Loader2 className="animate-spin" />} Upload photo &amp; mark resolved
+                      </Button>
+                      <Button type="button" variant="ghost" disabled={resolveMutation.isPending} onClick={() => { setResolving(false); resolveMutation.reset(); }}>Cancel</Button>
+                    </div>
+                  </form>
+                )}
                 {statusMutation.isError ? (
                   <p role="alert" className="mt-2 text-sm text-destructive">Status not saved: {statusMutation.error.message}</p>
                 ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">Saved to the shared database and shown on every device's dashboard.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Saved to the shared database and shown on every device's dashboard. No sign-in: anyone using the demo can change status.</p>
                 )}
               </>
             )}
@@ -140,5 +191,21 @@ function IncidentPage() {
         </aside>
       </div>
     </section>
+  );
+}
+
+function StoredPhoto({ path, caption, alt }: { path: string; caption: string; alt: string }) {
+  const { data, isPending, error } = useQuery({ queryKey: ["photo", path], queryFn: () => getPhotoUrl(path), staleTime: 50 * 60_000 });
+  return (
+    <figure>
+      <figcaption className="mb-1.5 text-sm font-medium">{caption}</figcaption>
+      {data ? (
+        <img src={data} alt={alt} loading="lazy" className="aspect-[4/3] w-full rounded-lg border object-cover" />
+      ) : (
+        <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground">
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : `Photo unavailable${error ? `: ${error.message}` : ""}`}
+        </div>
+      )}
+    </figure>
   );
 }
