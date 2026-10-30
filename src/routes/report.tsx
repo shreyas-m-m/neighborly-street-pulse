@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES } from "@/data/demo";
 import { SEVERITIES } from "@/lib/incidents";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { createIncident } from "@/lib/incidents-api";
 import { INCIDENTS_KEY } from "@/hooks/use-incidents";
 
@@ -44,6 +45,7 @@ function ReportPage() {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: createIncident,
@@ -72,7 +74,7 @@ function ReportPage() {
       document.getElementById(Object.keys(next)[0] ?? "")?.focus();
       return;
     }
-    mutation.mutate(result.data);
+    mutation.mutate({ ...result.data, photo });
   };
 
   if (createdId) {
@@ -86,7 +88,7 @@ function ReportPage() {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild><Link to="/incidents/$id" params={{ id: createdId }}>View incident</Link></Button>
           <Button asChild variant="outline"><Link to="/dashboard">Go to dashboard</Link></Button>
-          <Button variant="ghost" onClick={() => { setValues(EMPTY); setCreatedId(null); mutation.reset(); }}>Report another</Button>
+          <Button variant="ghost" onClick={() => { setValues(EMPTY); setPhoto(null); setCreatedId(null); mutation.reset(); }}>Report another</Button>
         </div>
       </section>
     );
@@ -156,6 +158,8 @@ function ReportPage() {
           <Input id="peopleAffected" type="number" inputMode="numeric" min={1} className="mt-1.5 max-w-48" placeholder="e.g. 200" value={values.peopleAffected} onChange={(e) => set("peopleAffected", e.target.value)} {...aria("peopleAffected")} />
           {err("peopleAffected")}
         </div>
+
+        <PhotoPicker label="Photo of the issue (optional)" hint="JPEG, PNG or WebP, up to 5 MB." file={photo} onChange={setPhoto} disabled={mutation.isPending} />
 
         {mutation.isError && (
           <div role="alert" className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
