@@ -21,7 +21,10 @@ export type Database = {
           description: string
           id: string
           location: string
+          original_photo_path: string | null
           people_affected: number
+          resolution_note: string | null
+          resolution_photo_path: string | null
           severity: string
           status: string
           title: string
@@ -33,7 +36,10 @@ export type Database = {
           description: string
           id?: string
           location: string
+          original_photo_path?: string | null
           people_affected: number
+          resolution_note?: string | null
+          resolution_photo_path?: string | null
           severity: string
           status?: string
           title: string
@@ -45,7 +51,10 @@ export type Database = {
           description?: string
           id?: string
           location?: string
+          original_photo_path?: string | null
           people_affected?: number
+          resolution_note?: string | null
+          resolution_photo_path?: string | null
           severity?: string
           status?: string
           title?: string
