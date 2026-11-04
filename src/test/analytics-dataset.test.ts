@@ -24,20 +24,21 @@ function parseCsvLine(line: string): string[] {
 function loadSyntheticCsv(): Incident[] {
   const csv = readFileSync("docs/data-engineering/synthetic-incidents.csv", "utf8").trim();
   const lines = csv.split(/\r?\n/);
-  const headers = parseCsvLine(lines[0]);
+  const headers = parseCsvLine(lines[0] ?? "");
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
-    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
+    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])) as Record<string, string>;
+    const get = (k: string): string => row[k] ?? "";
     return {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      category: row.category as CategoryId,
-      location: row.location,
-      severity: row.severity as Severity,
-      peopleAffected: Number(row.people_affected),
-      status: row.status as Status,
-      createdAt: row.created_at,
+      id: get("id"),
+      title: get("title"),
+      description: get("description"),
+      category: get("category") as CategoryId,
+      location: get("location"),
+      severity: get("severity") as Severity,
+      peopleAffected: Number(get("people_affected")),
+      status: get("status") as Status,
+      createdAt: get("created_at"),
       // Synthetic fixtures intentionally stay out of the production database.
       source: "demo",
     };

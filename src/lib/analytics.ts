@@ -76,12 +76,12 @@ export function findDuplicateCandidates(
   const results: DuplicateCandidate[] = [];
 
   for (let i = 0; i < incidents.length; i += 1) {
-    const a = incidents[i];
+    const a = incidents[i]!;
     const timeA = validTime(a.createdAt);
     if (timeA === null || timeA > now) continue;
 
     for (let j = i + 1; j < incidents.length; j += 1) {
-      const b = incidents[j];
+      const b = incidents[j]!;
       if (a.id === b.id || a.category !== b.category) continue;
       const timeB = validTime(b.createdAt);
       if (timeB === null || timeB > now) continue;

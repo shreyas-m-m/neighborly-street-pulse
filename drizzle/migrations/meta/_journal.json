@@ -22,6 +22,13 @@
       "when": 1793366000111,
       "tag": "0002_incident_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793818043668,
+      "tag": "0003_tighten_incident_update_policy",
+      "breakpoints": true
     }
   ]
 }
