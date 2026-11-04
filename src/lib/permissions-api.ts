@@ -127,10 +127,11 @@ export async function bootstrapFirstAdmin(): Promise<boolean> {
  * Checks if there is currently any registered admin.
  */
 export async function checkHasAnyAdmin(): Promise<boolean> {
-  const { count, error } = await supabase
+  const { data, error } = await supabase.rpc("has_any_admin");
+  if (!error && typeof data === "boolean") return data;
+  const { count } = await supabase
     .from("user_roles")
     .select("*", { count: "exact", head: true })
     .eq("role", "admin");
-  if (error) return true; // Fail safe
   return (count ?? 0) > 0;
 }

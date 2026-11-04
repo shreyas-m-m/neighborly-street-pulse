@@ -78,6 +78,16 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   );
 $$;
 
+-- Public check to see if an admin is already registered (without leaking member details)
+CREATE OR REPLACE FUNCTION public.has_any_admin()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles WHERE role = 'admin'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.has_any_admin() TO anon, authenticated;
+
 -- 5. Atomic, email-restricted, one-time bootstrap configuration table
 -- Initialized without arbitrary placeholder emails.
 CREATE TABLE IF NOT EXISTS public.admin_bootstrap_config (

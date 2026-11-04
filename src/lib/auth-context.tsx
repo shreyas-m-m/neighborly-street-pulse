@@ -54,6 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAdminCount = useCallback(async () => {
     try {
+      const { data, error } = await supabase.rpc("has_any_admin");
+      if (!error && typeof data === "boolean") {
+        setHasAnyAdmin(data);
+        return;
+      }
       const { count } = await supabase
         .from("user_roles")
         .select("*", { count: "exact", head: true })
