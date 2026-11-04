@@ -37,7 +37,9 @@ export function PhotoPicker({ label, hint, file, onChange, error, disabled }: Pr
   const shownError = localError ?? error;
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-medium">{label}</label>
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
       <input
         ref={inputRef}
@@ -51,20 +53,51 @@ export function PhotoPicker({ label, hint, file, onChange, error, disabled }: Pr
       />
       {preview ? (
         <div className="mt-2 flex flex-wrap items-start gap-3">
-          <img src={preview} alt={`Preview of selected photo: ${file?.name ?? ""}`} className="h-32 w-44 rounded-lg border object-cover" />
+          <img
+            src={preview}
+            alt={`Preview of selected photo: ${file?.name ?? ""}`}
+            className="h-32 w-44 rounded-lg border object-cover"
+          />
           <div className="flex flex-col gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => inputRef.current?.click()}>Replace</Button>
-            <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { setLocalError(null); onChange(null); }}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={() => inputRef.current?.click()}
+            >
+              Replace
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={() => {
+                setLocalError(null);
+                onChange(null);
+              }}
+            >
               <X /> Remove
             </Button>
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" className="mt-2" disabled={disabled} onClick={() => inputRef.current?.click()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-2"
+          disabled={disabled}
+          onClick={() => inputRef.current?.click()}
+        >
           <ImagePlus /> Choose photo
         </Button>
       )}
-      {shownError && <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm text-destructive">{shownError}</p>}
+      {shownError && (
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm text-destructive">
+          {shownError}
+        </p>
+      )}
     </div>
   );
 }

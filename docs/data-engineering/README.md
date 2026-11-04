@@ -7,18 +7,18 @@ Review basis: `main` branch migrations and incident-related TypeScript source. T
 
 The reviewed migrations define one application table, `public.incidents`. `drizzle/schema.ts` is intentionally blank, so the SQL migrations are the current useful schema reference.
 
-| Column | PostgreSQL type | Required | Default / constraint |
-|---|---|---|---|
-| `id` | `text` | Yes, primary key | Generated `INC-XXXXXXXX`-style ID |
-| `title` | `text` | Yes | Trimmed length 5–80 |
-| `description` | `text` | Yes | Trimmed length 10–1000 |
-| `category` | `text` | Yes | `garbage`, `roads`, `water`, `lights` |
-| `location` | `text` | Yes | Trimmed length 3–150 |
-| `severity` | `text` | Yes | `low`, `medium`, `high`, `critical` |
-| `people_affected` | `integer` | Yes | 1–1,000,000 |
-| `status` | `text` | Yes | Default `open`; `open`, `in_progress`, `resolved` |
-| `created_at` | `timestamptz` | Yes | `now()` |
-| `updated_at` | `timestamptz` | Yes | `now()`; updated by trigger |
+| Column            | PostgreSQL type | Required         | Default / constraint                              |
+| ----------------- | --------------- | ---------------- | ------------------------------------------------- |
+| `id`              | `text`          | Yes, primary key | Generated `INC-XXXXXXXX`-style ID                 |
+| `title`           | `text`          | Yes              | Trimmed length 5–80                               |
+| `description`     | `text`          | Yes              | Trimmed length 10–1000                            |
+| `category`        | `text`          | Yes              | `garbage`, `roads`, `water`, `lights`             |
+| `location`        | `text`          | Yes              | Trimmed length 3–150                              |
+| `severity`        | `text`          | Yes              | `low`, `medium`, `high`, `critical`               |
+| `people_affected` | `integer`       | Yes              | 1–1,000,000                                       |
+| `status`          | `text`          | Yes              | Default `open`; `open`, `in_progress`, `resolved` |
+| `created_at`      | `timestamptz`   | Yes              | `now()`                                           |
+| `updated_at`      | `timestamptz`   | Yes              | `now()`; updated by trigger                       |
 
 No foreign-key relationships or additional application tables appear in the reviewed migration. An index exists on `created_at DESC`.
 
@@ -46,6 +46,7 @@ See [synthetic-incidents.csv](./synthetic-incidents.csv): 24 fictional records, 
 ## D. Integration instructions
 
 ### Member 1 — website / database
+
 1. Keep the current Supabase project/table; do not create another database.
 2. Compare the live schema, constraints, grants, and RLS policies against the migration summary using read-only inspection.
 3. Keep real report submissions on the current form/API flow; let the database assign ID/status/timestamps.
@@ -53,6 +54,7 @@ See [synthetic-incidents.csv](./synthetic-incidents.csv): 24 fictional records, 
 5. No schema change until the team agrees on a migration and rollback plan.
 
 ### Member 3 — analytics
+
 1. Load CSV into a local script/notebook or fixture reader, not the shared database.
 2. Map `people_affected` → `peopleAffected` and `created_at` → `createdAt`.
 3. Use `areaOf` and `computeScore` for baseline comparisons; summarize hotspot counts by ward/category.

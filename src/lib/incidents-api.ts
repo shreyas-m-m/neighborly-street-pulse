@@ -20,7 +20,8 @@ interface IncidentRow {
   resolution_note: string | null;
 }
 
-const COLUMNS = "id, title, description, category, location, severity, people_affected, status, created_at, original_photo_path, resolution_photo_path, resolution_note";
+const COLUMNS =
+  "id, title, description, category, location, severity, people_affected, status, created_at, original_photo_path, resolution_photo_path, resolution_note";
 
 function toIncident(row: IncidentRow): Incident {
   return {
@@ -67,7 +68,9 @@ export async function uploadPhoto(kind: "original" | "resolution", file: File): 
   const problem = validatePhoto(file);
   if (problem) throw new Error(problem);
   const path = `${kind}/${crypto.randomUUID()}.${PHOTO_TYPES[file.type]}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(`Photo upload failed: ${error.message}`);
   return path;
 }
@@ -99,7 +102,11 @@ export async function createIncident(input: NewIncident): Promise<Incident> {
 }
 
 export async function updateIncidentStatus(id: string, status: Status): Promise<void> {
-  const { data, error } = await supabase.from("incidents").update({ status }).eq("id", id).select("id");
+  const { data, error } = await supabase
+    .from("incidents")
+    .update({ status })
+    .eq("id", id)
+    .select("id");
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Incident not found in the database.");
 }
@@ -109,7 +116,11 @@ export async function resolveIncident(id: string, photo: File, note: string): Pr
   const path = await uploadPhoto("resolution", photo);
   const { data, error } = await supabase
     .from("incidents")
-    .update({ status: "resolved", resolution_photo_path: path, resolution_note: note.trim() || null })
+    .update({
+      status: "resolved",
+      resolution_photo_path: path,
+      resolution_note: note.trim() || null,
+    })
     .eq("id", id)
     .select("id");
   if (error) throw new Error(error.message);

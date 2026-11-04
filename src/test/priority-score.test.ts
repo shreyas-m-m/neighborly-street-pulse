@@ -3,8 +3,16 @@ import { computeScore, type Incident } from "@/lib/incidents";
 
 const NOW = new Date("2026-10-29T00:00:00Z").getTime();
 const base: Incident = {
-  id: "A", title: "t", category: "water", severity: "critical", status: "open", location: "X, Ward 1",
-  description: "d", peopleAffected: 999, createdAt: "2026-10-01T00:00:00Z", source: "demo",
+  id: "A",
+  title: "t",
+  category: "water",
+  severity: "critical",
+  status: "open",
+  location: "X, Ward 1",
+  description: "d",
+  peopleAffected: 999,
+  createdAt: "2026-10-01T00:00:00Z",
+  source: "demo",
 };
 const neighbours = [1, 2, 3, 4].map((n) => ({ ...base, id: `N${n}` }));
 

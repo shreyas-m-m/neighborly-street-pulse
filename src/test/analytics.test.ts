@@ -19,23 +19,34 @@ const incident = (overrides: Partial<Incident> = {}): Incident => ({
 
 describe("duplicate candidate detection", () => {
   it("flags similar reports in the same category and ward within seven days", () => {
-    const candidates = findDuplicateCandidates([
-      incident(),
-      incident({ id: "B", title: "Burst water main near bus stop", location: "mg ROAD, ward 12", createdAt: "2026-10-29T08:00:00Z" }),
-    ], { now: NOW });
+    const candidates = findDuplicateCandidates(
+      [
+        incident(),
+        incident({
+          id: "B",
+          title: "Burst water main near bus stop",
+          location: "mg ROAD, ward 12",
+          createdAt: "2026-10-29T08:00:00Z",
+        }),
+      ],
+      { now: NOW },
+    );
     expect(candidates).toHaveLength(1);
-    expect(candidates[0]!.score).toBeGreaterThanOrEqual(70);
-    expect(candidates[0]!.reasons).toHaveLength(4);
+    expect(candidates[0].score).toBeGreaterThanOrEqual(70);
+    expect(candidates[0].reasons).toHaveLength(4);
   });
 
   it("does not flag different categories, different wards, or old reports", () => {
     const original = incident();
-    const results = findDuplicateCandidates([
-      original,
-      incident({ id: "B", category: "roads" }),
-      incident({ id: "C", location: "Other Road, Ward 3" }),
-      incident({ id: "D", createdAt: "2026-10-01T10:00:00Z" }),
-    ], { now: NOW });
+    const results = findDuplicateCandidates(
+      [
+        original,
+        incident({ id: "B", category: "roads" }),
+        incident({ id: "C", location: "Other Road, Ward 3" }),
+        incident({ id: "D", createdAt: "2026-10-01T10:00:00Z" }),
+      ],
+      { now: NOW },
+    );
     expect(results).toHaveLength(0);
   });
 

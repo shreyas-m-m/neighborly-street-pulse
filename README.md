@@ -1,6 +1,5 @@
 # Neighborly Street Pulse
 
-
 This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://neighborly-street-pulse.lovable.app

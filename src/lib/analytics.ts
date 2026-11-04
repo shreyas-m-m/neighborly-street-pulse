@@ -36,7 +36,11 @@ function normalizedArea(location: string): string {
 }
 
 function tokens(value: string): Set<string> {
-  return new Set(normalize(value).split(" ").filter((word) => word.length > 2));
+  return new Set(
+    normalize(value)
+      .split(" ")
+      .filter((word) => word.length > 2),
+  );
 }
 
 function jaccard(a: Set<string>, b: Set<string>): number {
@@ -76,12 +80,12 @@ export function findDuplicateCandidates(
   const results: DuplicateCandidate[] = [];
 
   for (let i = 0; i < incidents.length; i += 1) {
-    const a = incidents[i]!;
+    const a = incidents[i];
     const timeA = validTime(a.createdAt);
     if (timeA === null || timeA > now) continue;
 
     for (let j = i + 1; j < incidents.length; j += 1) {
-      const b = incidents[j]!;
+      const b = incidents[j];
       if (a.id === b.id || a.category !== b.category) continue;
       const timeB = validTime(b.createdAt);
       if (timeB === null || timeB > now) continue;
@@ -97,7 +101,8 @@ export function findDuplicateCandidates(
       // every report in the same ward as a duplicate.
       if (similarity < 0.2) continue;
 
-      const timeScore = windowMs === 0 ? (ageDifference === 0 ? 15 : 0) : 15 * (1 - ageDifference / windowMs);
+      const timeScore =
+        windowMs === 0 ? (ageDifference === 0 ? 15 : 0) : 15 * (1 - ageDifference / windowMs);
       const score = Math.round(20 + 25 + similarity * 40 + timeScore);
       if (score < threshold) continue;
 
@@ -105,13 +110,18 @@ export function findDuplicateCandidates(
         "Same incident category",
         `Same normalized ward/area: ${areaOf(a.location)}`,
         `Similar report text (${Math.round(similarity * 100)}% token similarity)`,
-        `Reported within ${Math.round(ageDifference / DAY_MS * 10) / 10} day(s) of each other`,
+        `Reported within ${Math.round((ageDifference / DAY_MS) * 10) / 10} day(s) of each other`,
       ];
       results.push({ firstId: a.id, secondId: b.id, score: Math.min(100, score), reasons });
     }
   }
 
-  return results.sort((a, b) => b.score - a.score || a.firstId.localeCompare(b.firstId) || a.secondId.localeCompare(b.secondId));
+  return results.sort(
+    (a, b) =>
+      b.score - a.score ||
+      a.firstId.localeCompare(b.firstId) ||
+      a.secondId.localeCompare(b.secondId),
+  );
 }
 
 export interface Hotspot {
@@ -132,26 +142,40 @@ export interface Hotspot {
  * mean active count for that category across wards represented in the input.
  */
 export function detectHotspots(incidents: Incident[], minimumActive = 3): Hotspot[] {
-  const groups = new Map<string, { ward: string; category: CategoryId; total: number; active: number; resolved: number }>();
+  const groups = new Map<
+    string,
+    { ward: string; category: CategoryId; total: number; active: number; resolved: number }
+  >();
   const wardActiveByCategory = new Map<CategoryId, Map<string, number>>();
 
   for (const incident of incidents) {
     const ward = areaOf(incident.location) || "Unknown";
     const key = `${incident.category}::${normalize(ward)}`;
-    const group = groups.get(key) ?? { ward, category: incident.category, total: 0, active: 0, resolved: 0 };
+    const group = groups.get(key) ?? {
+      ward,
+      category: incident.category,
+      total: 0,
+      active: 0,
+      resolved: 0,
+    };
     group.total += 1;
     if (incident.status === "resolved") group.resolved += 1;
     else group.active += 1;
     groups.set(key, group);
 
     const wards = wardActiveByCategory.get(incident.category) ?? new Map<string, number>();
-    wards.set(normalize(ward), (wards.get(normalize(ward)) ?? 0) + (incident.status === "resolved" ? 0 : 1));
+    wards.set(
+      normalize(ward),
+      (wards.get(normalize(ward)) ?? 0) + (incident.status === "resolved" ? 0 : 1),
+    );
     wardActiveByCategory.set(incident.category, wards);
   }
 
   const results = [...groups.values()].map((group) => {
     const wardCounts = [...(wardActiveByCategory.get(group.category)?.values() ?? [])];
-    const average = wardCounts.length ? wardCounts.reduce((sum, count) => sum + count, 0) / wardCounts.length : 0;
+    const average = wardCounts.length
+      ? wardCounts.reduce((sum, count) => sum + count, 0) / wardCounts.length
+      : 0;
     const flagged = group.active >= Math.max(1, minimumActive) && group.active > average;
     const categoryName = group.category;
     const explanation = flagged
@@ -169,5 +193,11 @@ export function detectHotspots(incidents: Incident[], minimumActive = 3): Hotspo
     };
   });
 
-  return results.sort((a, b) => Number(b.flagged) - Number(a.flagged) || b.activeReports - a.activeReports || a.ward.localeCompare(b.ward) || a.category.localeCompare(b.category));
+  return results.sort(
+    (a, b) =>
+      Number(b.flagged) - Number(a.flagged) ||
+      b.activeReports - a.activeReports ||
+      a.ward.localeCompare(b.ward) ||
+      a.category.localeCompare(b.category),
+  );
 }

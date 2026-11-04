@@ -1,11 +1,39 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, Loader2, RefreshCw, CheckCircle2, Inbox, ListChecks, MapPin, Search, SearchX } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  CheckCircle2,
+  Inbox,
+  ListChecks,
+  MapPin,
+  Search,
+  SearchX,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CATEGORIES } from "@/data/demo";
@@ -24,7 +52,12 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-const SEV_COLORS = { critical: "var(--sev-critical)", high: "var(--sev-high)", medium: "var(--sev-medium)", low: "var(--sev-low)" };
+const SEV_COLORS = {
+  critical: "var(--sev-critical)",
+  high: "var(--sev-high)",
+  medium: "var(--sev-medium)",
+  low: "var(--sev-low)",
+};
 const ALL = "all";
 
 function Dashboard() {
@@ -37,10 +70,16 @@ function Dashboard() {
 
   // Attach the score to each incident once, then sort highest first.
   const scored = useMemo(
-    () => incidents.map((i) => ({ ...i, score: computeScore(i, incidents, now).total })).sort((a, b) => b.score - a.score),
+    () =>
+      incidents
+        .map((i) => ({ ...i, score: computeScore(i, incidents, now).total }))
+        .sort((a, b) => b.score - a.score),
     [incidents, now],
   );
-  const areas = useMemo(() => [...new Set(incidents.map((i) => areaOf(i.location)))].sort(), [incidents]);
+  const areas = useMemo(
+    () => [...new Set(incidents.map((i) => areaOf(i.location)))].sort(),
+    [incidents],
+  );
 
   const filtered = scored.filter((i) => {
     const q = query.trim().toLowerCase();
@@ -55,24 +94,55 @@ function Dashboard() {
 
   const kpis = [
     { label: "Total reports", value: incidents.length, icon: Inbox },
-    { label: "Open incidents", value: incidents.filter((i) => i.status !== "resolved").length, icon: ListChecks },
-    { label: "Critical / high", value: incidents.filter((i) => i.status !== "resolved" && (i.severity === "critical" || i.severity === "high")).length, icon: AlertTriangle },
-    { label: "Resolved", value: incidents.filter((i) => i.status === "resolved").length, icon: CheckCircle2 },
+    {
+      label: "Open incidents",
+      value: incidents.filter((i) => i.status !== "resolved").length,
+      icon: ListChecks,
+    },
+    {
+      label: "Critical / high",
+      value: incidents.filter(
+        (i) => i.status !== "resolved" && (i.severity === "critical" || i.severity === "high"),
+      ).length,
+      icon: AlertTriangle,
+    },
+    {
+      label: "Resolved",
+      value: incidents.filter((i) => i.status === "resolved").length,
+      icon: CheckCircle2,
+    },
   ];
 
-  const categoryData = CATEGORIES.map((c) => ({ name: c.name.split(" ").slice(-1)[0], full: c.name, count: incidents.filter((i) => i.category === c.id).length }));
-  const severityData = SEVERITIES.map((s) => ({ name: s, value: incidents.filter((i) => i.severity === s).length })).filter((d) => d.value > 0);
+  const categoryData = CATEGORIES.map((c) => ({
+    name: c.name.split(" ").slice(-1)[0],
+    full: c.name,
+    count: incidents.filter((i) => i.category === c.id).length,
+  }));
+  const severityData = SEVERITIES.map((s) => ({
+    name: s,
+    value: incidents.filter((i) => i.severity === s).length,
+  })).filter((d) => d.value > 0);
 
   const hotspots = areas
     .map((a) => {
       const list = incidents.filter((i) => areaOf(i.location) === a);
-      return { area: a, total: list.length, open: list.filter((i) => i.status !== "resolved").length };
+      return {
+        area: a,
+        total: list.length,
+        open: list.filter((i) => i.status !== "resolved").length,
+      };
     })
     .sort((x, y) => y.open - x.open || y.total - x.total)
     .slice(0, 5);
   const maxOpen = Math.max(1, ...hotspots.map((h) => h.open));
 
-  const clear = () => { setQuery(""); setCategory(ALL); setSeverity(ALL); setStatus(ALL); setArea(ALL); };
+  const clear = () => {
+    setQuery("");
+    setCategory(ALL);
+    setSeverity(ALL);
+    setStatus(ALL);
+    setArea(ALL);
+  };
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -83,25 +153,40 @@ function Dashboard() {
             <Badge className="bg-sev-medium text-foreground hover:bg-sev-medium">DEMO DATA</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Built-in sample incidents (marked "Demo") plus {isLoading ? "…" : sharedCount} real report{sharedCount === 1 ? "" : "s"} from the shared database.
+            Built-in sample incidents (marked "Demo") plus {isLoading ? "…" : sharedCount} real
+            report{sharedCount === 1 ? "" : "s"} from the shared database.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching} aria-label="Refresh incidents">
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            aria-label="Refresh incidents"
+          >
             <RefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh
           </Button>
-          <Button asChild><Link to="/report">Report an Issue</Link></Button>
+          <Button asChild>
+            <Link to="/report">Report an Issue</Link>
+          </Button>
         </div>
       </div>
 
       {isLoading && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading shared reports…</p>
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading shared reports…
+        </p>
       )}
       {error && (
-        <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+        <div
+          role="alert"
+          className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
+        >
           <AlertCircle className="h-4 w-4 text-destructive" />
           <span>Couldn't load shared reports ({error.message}). Only demo data is shown.</span>
-          <Button size="sm" variant="outline" onClick={() => refetch()}>Try again</Button>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            Try again
+          </Button>
         </div>
       )}
 
@@ -109,7 +194,10 @@ function Dashboard() {
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon }) => (
           <div key={label} className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">{label}<Icon className="h-4 w-4 text-accent" /></div>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {label}
+              <Icon className="h-4 w-4 text-accent" />
+            </div>
             <p className="mt-2 text-3xl font-bold text-primary">{value}</p>
           </div>
         ))}
@@ -137,8 +225,17 @@ function Dashboard() {
           <div className="mt-4 h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={severityData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
-                  {severityData.map((d) => <Cell key={d.name} fill={SEV_COLORS[d.name]} />)}
+                <Pie
+                  data={severityData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={45}
+                  outerRadius={75}
+                  paddingAngle={2}
+                >
+                  {severityData.map((d) => (
+                    <Cell key={d.name} fill={SEV_COLORS[d.name]} />
+                  ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -147,25 +244,48 @@ function Dashboard() {
           <ul className="mt-2 flex flex-wrap justify-center gap-3 text-xs">
             {severityData.map((d) => (
               <li key={d.name} className="flex items-center gap-1 capitalize">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: SEV_COLORS[d.name] }} />{d.name} ({d.value})
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: SEV_COLORS[d.name] }}
+                />
+                {d.name} ({d.value})
               </li>
             ))}
           </ul>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
-          <h2 className="flex items-center gap-2 font-semibold"><MapPin className="h-4 w-4 text-accent" /> Hotspots</h2>
+          <h2 className="flex items-center gap-2 font-semibold">
+            <MapPin className="h-4 w-4 text-accent" /> Hotspots
+          </h2>
           <ul className="mt-4 space-y-3">
             {hotspots.map((h) => (
               <li key={h.area}>
-                <button className="w-full text-left" onClick={() => setArea(h.area)} aria-label={`Filter by ${h.area}`}>
-                  <div className="flex justify-between text-sm"><span className="font-medium">{h.area}</span><span className="text-muted-foreground">{h.open} open / {h.total}</span></div>
-                  <div className="mt-1 h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-accent" style={{ width: `${(h.open / maxOpen) * 100}%` }} /></div>
+                <button
+                  className="w-full text-left"
+                  onClick={() => setArea(h.area)}
+                  aria-label={`Filter by ${h.area}`}
+                >
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{h.area}</span>
+                    <span className="text-muted-foreground">
+                      {h.open} open / {h.total}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      style={{ width: `${(h.open / maxOpen) * 100}%` }}
+                    />
+                  </div>
                 </button>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-muted-foreground">Simple count of reports per area (text after the last comma in the location). Not live geospatial analysis.</p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Simple count of reports per area (text after the last comma in the location). Not live
+            geospatial analysis.
+          </p>
         </div>
       </div>
 
@@ -174,16 +294,50 @@ function Dashboard() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <div className="relative sm:col-span-2">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search title, location or ID" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search incidents" />
+            <Input
+              className="pl-9"
+              placeholder="Search title, location or ID"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search incidents"
+            />
           </div>
-          <FilterSelect label="Category" value={category} onChange={setCategory} options={CATEGORIES.map((c) => ({ value: c.id, label: c.name }))} />
-          <FilterSelect label="Severity" value={severity} onChange={setSeverity} options={SEVERITIES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))} />
-          <FilterSelect label="Status" value={status} onChange={setStatus} options={STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))} />
-          <FilterSelect label="Location" value={area} onChange={setArea} options={areas.map((a) => ({ value: a, label: a }))} />
+          <FilterSelect
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            options={CATEGORIES.map((c) => ({ value: c.id, label: c.name }))}
+          />
+          <FilterSelect
+            label="Severity"
+            value={severity}
+            onChange={setSeverity}
+            options={SEVERITIES.map((s) => ({
+              value: s,
+              label: s.charAt(0).toUpperCase() + s.slice(1),
+            }))}
+          />
+          <FilterSelect
+            label="Status"
+            value={status}
+            onChange={setStatus}
+            options={STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+          />
+          <FilterSelect
+            label="Location"
+            value={area}
+            onChange={setArea}
+            options={areas.map((a) => ({ value: a, label: a }))}
+          />
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{filtered.length} of {incidents.length} incidents · sorted by priority score (highest first)</span>
-          <button className="underline hover:text-foreground" onClick={clear}>Clear filters</button>
+          <span>
+            {filtered.length} of {incidents.length} incidents · sorted by priority score (highest
+            first)
+          </span>
+          <button className="underline hover:text-foreground" onClick={clear}>
+            Clear filters
+          </button>
         </div>
       </div>
 
@@ -193,27 +347,56 @@ function Dashboard() {
           <div className="py-16 text-center">
             <SearchX className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-3 font-medium">No incidents match these filters</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={clear}>Clear filters</Button>
+            <Button variant="outline" size="sm" className="mt-4" onClick={clear}>
+              Clear filters
+            </Button>
           </div>
         ) : (
           <ul className="divide-y">
             <li className="hidden grid-cols-12 gap-3 bg-muted px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
-              <span className="col-span-1">Score</span><span className="col-span-5">Incident</span><span className="col-span-2">Category</span><span className="col-span-2">Severity</span><span className="col-span-2">Status</span>
+              <span className="col-span-1">Score</span>
+              <span className="col-span-5">Incident</span>
+              <span className="col-span-2">Category</span>
+              <span className="col-span-2">Severity</span>
+              <span className="col-span-2">Status</span>
             </li>
             {filtered.map((i) => {
               const cat = CATEGORIES.find((c) => c.id === i.category);
               return (
                 <li key={i.id}>
-                  <Link to="/incidents/$id" params={{ id: i.id }} className="grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-3 hover:bg-secondary md:grid-cols-12">
-                    <span className="col-span-1 grid h-10 w-10 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground" title="Priority score (0–100)">{i.score}</span>
+                  <Link
+                    to="/incidents/$id"
+                    params={{ id: i.id }}
+                    className="grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-3 hover:bg-secondary md:grid-cols-12"
+                  >
+                    <span
+                      className="col-span-1 grid h-10 w-10 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
+                      title="Priority score (0–100)"
+                    >
+                      {i.score}
+                    </span>
                     <div className="min-w-0 md:col-span-5">
-                      <p className="flex items-center gap-2 truncate font-medium">{i.title}{i.source === "demo" && <span className="shrink-0 rounded border px-1.5 text-[10px] font-semibold uppercase text-muted-foreground">Demo</span>}</p>
-                      <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{i.location} · <span className="font-mono">{i.id}</span></p>
+                      <p className="flex items-center gap-2 truncate font-medium">
+                        {i.title}
+                        {i.source === "demo" && (
+                          <span className="shrink-0 rounded border px-1.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                            Demo
+                          </span>
+                        )}
+                      </p>
+                      <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {i.location} · <span className="font-mono">{i.id}</span>
+                      </p>
                     </div>
                     <span className="col-span-2 col-start-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground md:col-start-auto md:contents">
                       <span className="md:col-span-2">{cat?.name.split(" ").slice(-1)[0]}</span>
-                      <span className="md:col-span-2"><SeverityBadge severity={i.severity} /></span>
-                      <span className="md:col-span-2"><StatusBadge status={i.status} /></span>
+                      <span className="md:col-span-2">
+                        <SeverityBadge severity={i.severity} />
+                      </span>
+                      <span className="md:col-span-2">
+                        <StatusBadge status={i.status} />
+                      </span>
                     </span>
                   </Link>
                 </li>
@@ -223,19 +406,36 @@ function Dashboard() {
         )}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Priority score = severity 40% + people affected 25% + time unresolved 20% + nearby reports 15%, scaled to 0–100. A transparent heuristic, not AI.
+        Priority score = severity 40% + people affected 25% + time unresolved 20% + nearby reports
+        15%, scaled to 0–100. A transparent heuristic, not AI.
       </p>
     </section>
   );
 }
 
-function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={`Filter by ${label}`}><SelectValue /></SelectTrigger>
+      <SelectTrigger aria-label={`Filter by ${label}`}>
+        <SelectValue />
+      </SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>All {label.toLowerCase()}</SelectItem>
-        {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );

@@ -10,8 +10,10 @@ function parseCsvLine(line: string): string[] {
   for (let i = 0; i < line.length; i += 1) {
     const char = line[i];
     if (char === '"') {
-      if (quoted && line[i + 1] === '"') { field += '"'; i += 1; }
-      else quoted = !quoted;
+      if (quoted && line[i + 1] === '"') {
+        field += '"';
+        i += 1;
+      } else quoted = !quoted;
     } else if (char === "," && !quoted) {
       fields.push(field);
       field = "";
@@ -24,21 +26,20 @@ function parseCsvLine(line: string): string[] {
 function loadSyntheticCsv(): Incident[] {
   const csv = readFileSync("docs/data-engineering/synthetic-incidents.csv", "utf8").trim();
   const lines = csv.split(/\r?\n/);
-  const headers = parseCsvLine(lines[0] ?? "");
+  const headers = parseCsvLine(lines[0]);
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
-    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])) as Record<string, string>;
-    const get = (k: string): string => row[k] ?? "";
+    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
     return {
-      id: get("id"),
-      title: get("title"),
-      description: get("description"),
-      category: get("category") as CategoryId,
-      location: get("location"),
-      severity: get("severity") as Severity,
-      peopleAffected: Number(get("people_affected")),
-      status: get("status") as Status,
-      createdAt: get("created_at"),
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      category: row.category as CategoryId,
+      location: row.location,
+      severity: row.severity as Severity,
+      peopleAffected: Number(row.people_affected),
+      status: row.status as Status,
+      createdAt: row.created_at,
       // Synthetic fixtures intentionally stay out of the production database.
       source: "demo",
     };
@@ -60,7 +61,14 @@ describe("synthetic analytics fixture", () => {
   });
 
   it("returns only candidate pairs from the synthetic fixture", () => {
-    const candidates = findDuplicateCandidates(loadSyntheticCsv(), { now: new Date("2026-10-30T00:00:00Z").getTime() });
-    expect(candidates.every((candidate) => candidate.firstId.startsWith("SYN-") && candidate.secondId.startsWith("SYN-"))).toBe(true);
+    const candidates = findDuplicateCandidates(loadSyntheticCsv(), {
+      now: new Date("2026-10-30T00:00:00Z").getTime(),
+    });
+    expect(
+      candidates.every(
+        (candidate) =>
+          candidate.firstId.startsWith("SYN-") && candidate.secondId.startsWith("SYN-"),
+      ),
+    ).toBe(true);
   });
 });

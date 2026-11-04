@@ -15,6 +15,7 @@ This is an explainable TypeScript heuristic layer for Neighborly Street Pulse. I
 `findDuplicateCandidates(incidents, options?)` returns pairs with IDs, a score from 0 to 100, and human-readable reasons. Defaults: a 7-day time window and a 70-point score threshold.
 
 Weights:
+
 - Same category: 20 points (required).
 - Same normalized ward/area: 25 points (required).
 - Title and description token similarity: up to 40 points (title Jaccard similarity weighted 60%, description weighted 40%).
@@ -29,6 +30,7 @@ The current first pass requires the same category, same normalized ward, valid n
 `detectHotspots(incidents, minimumActive = 3)` groups by ward and category. Open and in-progress reports count as active; resolved reports appear in totals but do not count toward active concentration.
 
 A group is flagged when:
+
 1. active reports are at least the configured minimum (default 3); and
 2. active reports exceed the average active count for that category across wards represented in the input.
 
@@ -37,6 +39,7 @@ Each result includes ward, category, total, active and resolved counts, the comp
 ## 3. Priority score (existing formula)
 
 `computeScore` remains in `src/lib/incidents.ts` and preserves its existing 0–100 scale:
+
 - Severity: 40% (low 0.25, medium 0.5, high 0.75, critical 1.0).
 - People affected: 25%, logarithmic scale, full at about 1,000 people.
 - Time unresolved: 20%, full at 14 days; resolved incidents receive zero time points.
@@ -47,6 +50,7 @@ The total is rounded to an integer. It is a transparent prioritization heuristic
 ## 4. Test locally
 
 From the repository root:
+
 ```bash
 npm test
 npm run lint

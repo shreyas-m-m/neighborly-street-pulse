@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowLeft, Calendar, Loader2, MapPin, SearchX, Users } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  Loader2,
+  Lock,
+  MapPin,
+  SearchX,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +23,7 @@ import { CATEGORIES } from "@/data/demo";
 import { INCIDENTS_KEY, useIncidents } from "@/hooks/use-incidents";
 import { getPhotoUrl, resolveIncident, updateIncidentStatus } from "@/lib/incidents-api";
 import { STATUSES, STATUS_LABELS, computeScore, type Status } from "@/lib/incidents";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/incidents/$id")({
   head: ({ params }) => ({
@@ -29,6 +40,7 @@ export const Route = createFileRoute("/incidents/$id")({
 function IncidentPage() {
   const { id } = Route.useParams();
   const { incidents, isLoading, error, refetch, now } = useIncidents();
+  const { user, canResolve } = useAuth();
   const queryClient = useQueryClient();
   const statusMutation = useMutation({
     mutationFn: ({ status }: { status: Status }) => updateIncidentStatus(id, status),
@@ -43,34 +55,52 @@ function IncidentPage() {
       return resolveIncident(id, resPhoto, resNote);
     },
     onSuccess: () => {
-      setResolving(false); setResPhoto(null); setResNote("");
+      setResolving(false);
+      setResPhoto(null);
+      setResNote("");
       return queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
     },
   });
   const incident = incidents.find((i) => i.id === id);
 
   const back = (
-    <Link to="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <Link
+      to="/dashboard"
+      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
       <ArrowLeft className="h-4 w-4" /> Back to dashboard
     </Link>
   );
 
   if (!incident) {
-    if (isLoading) return <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-12 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading incident…</div>;
-    if (error) return (
-      <section className="mx-auto max-w-xl px-4 py-20 text-center">
-        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
-        <h1 className="mt-4 text-2xl font-bold text-primary">Couldn't load this incident</h1>
-        <p className="mt-2 text-muted-foreground">{error.message}</p>
-        <Button className="mt-6" onClick={() => refetch()}>Try again</Button>
-      </section>
-    );
+    if (isLoading)
+      return (
+        <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-12 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading incident…
+        </div>
+      );
+    if (error)
+      return (
+        <section className="mx-auto max-w-xl px-4 py-20 text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+          <h1 className="mt-4 text-2xl font-bold text-primary">Couldn't load this incident</h1>
+          <p className="mt-2 text-muted-foreground">{error.message}</p>
+          <Button className="mt-6" onClick={() => refetch()}>
+            Try again
+          </Button>
+        </section>
+      );
     return (
       <section className="mx-auto max-w-xl px-4 py-20 text-center">
         <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-bold text-primary">Incident not found</h1>
-        <p className="mt-2 text-muted-foreground">No incident with ID <span className="font-mono">{id}</span> exists in the demo data or the shared database.</p>
-        <Button asChild className="mt-6"><Link to="/dashboard">Back to dashboard</Link></Button>
+        <p className="mt-2 text-muted-foreground">
+          No incident with ID <span className="font-mono">{id}</span> exists in the demo data or the
+          shared database.
+        </p>
+        <Button asChild className="mt-6">
+          <Link to="/dashboard">Back to dashboard</Link>
+        </Button>
       </section>
     );
   }
@@ -89,13 +119,19 @@ function IncidentPage() {
       {back}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm text-muted-foreground">{incident.id}</span>
-        <Badge variant="outline">{incident.source === "demo" ? "Demo data" : "Shared report"}</Badge>
+        <Badge variant="outline">
+          {incident.source === "demo" ? "Demo data" : "Shared report"}
+        </Badge>
       </div>
       <h1 className="mt-2 text-3xl font-bold text-primary">{incident.title}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <SeverityBadge severity={incident.severity} />
         <StatusBadge status={incident.status} />
-        {category && <span className="inline-flex items-center gap-1 text-sm text-muted-foreground"><category.icon className="h-4 w-4" /> {category.name}</span>}
+        {category && (
+          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <category.icon className="h-4 w-4" /> {category.name}
+          </span>
+        )}
       </div>
 
       <div className="mt-8 grid gap-6 md:grid-cols-3">
@@ -104,43 +140,151 @@ function IncidentPage() {
             <h2 className="font-semibold">Description</h2>
             <p className="mt-2 whitespace-pre-line text-muted-foreground">{incident.description}</p>
             <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-3">
-              <div><dt className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-4 w-4" /> Location</dt><dd className="mt-1 font-medium">{incident.location}</dd></div>
-              <div><dt className="flex items-center gap-1 text-muted-foreground"><Calendar className="h-4 w-4" /> Reported</dt><dd className="mt-1 font-medium">{new Date(incident.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</dd></div>
-              <div><dt className="flex items-center gap-1 text-muted-foreground"><Users className="h-4 w-4" /> People affected</dt><dd className="mt-1 font-medium">{incident.peopleAffected.toLocaleString()}</dd></div>
+              <div>
+                <dt className="flex items-center gap-1 text-muted-foreground">
+                  <MapPin className="h-4 w-4" /> Location
+                </dt>
+                <dd className="mt-1 font-medium">{incident.location}</dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-4 w-4" /> Reported
+                </dt>
+                <dd className="mt-1 font-medium">
+                  {new Date(incident.createdAt).toLocaleDateString(undefined, {
+                    dateStyle: "medium",
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt className="flex items-center gap-1 text-muted-foreground">
+                  <Users className="h-4 w-4" /> People affected
+                </dt>
+                <dd className="mt-1 font-medium">{incident.peopleAffected.toLocaleString()}</dd>
+              </div>
             </dl>
           </div>
 
-          {(incident.originalPhotoPath || incident.resolutionPhotoPath || incident.resolutionNote) && (
+          {(incident.originalPhotoPath ||
+            incident.resolutionPhotoPath ||
+            incident.resolutionNote) && (
             <div className="rounded-xl border bg-card p-6">
-              <h2 className="font-semibold">{incident.resolutionPhotoPath ? "Before / After" : "Photo"}</h2>
+              <h2 className="font-semibold">
+                {incident.resolutionPhotoPath ? "Before / After" : "Photo"}
+              </h2>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                {incident.originalPhotoPath && <StoredPhoto path={incident.originalPhotoPath} caption="Before" alt={`Before: reported issue "${incident.title}" at ${incident.location}`} />}
-                {incident.resolutionPhotoPath && <StoredPhoto path={incident.resolutionPhotoPath} caption="After" alt={`After: resolution of "${incident.title}" at ${incident.location}`} />}
+                {incident.originalPhotoPath && (
+                  <StoredPhoto
+                    path={incident.originalPhotoPath}
+                    caption="Before"
+                    alt={`Before: reported issue "${incident.title}" at ${incident.location}`}
+                  />
+                )}
+                {incident.resolutionPhotoPath && (
+                  <StoredPhoto
+                    path={incident.resolutionPhotoPath}
+                    caption="After"
+                    alt={`After: resolution of "${incident.title}" at ${incident.location}`}
+                  />
+                )}
               </div>
-              {incident.resolutionNote && <p className="mt-4 text-sm"><span className="font-medium">Resolution note:</span> <span className="whitespace-pre-line text-muted-foreground">{incident.resolutionNote}</span></p>}
+              {incident.resolutionNote && (
+                <p className="mt-4 text-sm">
+                  <span className="font-medium">Resolution note:</span>{" "}
+                  <span className="whitespace-pre-line text-muted-foreground">
+                    {incident.resolutionNote}
+                  </span>
+                </p>
+              )}
             </div>
           )}
 
           <div className="rounded-xl border bg-card p-6">
-            <h2 className="font-semibold">Update status</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Update status</h2>
+              {!canResolve && incident.source !== "demo" && (
+                <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Resolver Permission Required
+                </Badge>
+              )}
+            </div>
+
             {incident.source === "demo" ? (
-              <p className="mt-2 text-sm text-muted-foreground">This is a built-in demo incident, so its status can't be changed. Submit a real report to try status updates.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This is a built-in demo incident, so its status can't be changed. Submit a real
+                report to try status updates.
+              </p>
+            ) : !canResolve ? (
+              <div className="mt-4">
+                {!user ? (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
+                    <div className="flex gap-3">
+                      <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                          Incident Resolution Restricted
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                          Only designated team members with <strong>Resolver permission</strong> can
+                          update incident status or submit resolution proof photos.
+                        </p>
+                        <div className="mt-3">
+                          <Button asChild size="sm">
+                            <Link to="/login">Sign In with Team Account</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <div className="flex gap-3">
+                      <ShieldAlert className="h-5 w-5 shrink-0 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Resolver Permission Required
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                          You are signed in as{" "}
+                          <span className="font-medium text-foreground">{user.email}</span>, but
+                          your account does not have permission to resolve incidents. An
+                          Administrator can grant you the Resolver role in the Admin Permissions
+                          panel.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
-                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Incident status">
+                <div
+                  className="mt-3 flex flex-wrap gap-2"
+                  role="group"
+                  aria-label="Incident status"
+                >
                   {STATUSES.map((s) => (
                     <Button
                       key={s}
-                      variant={incident.status === s || (s === "resolved" && resolving) ? "default" : "outline"}
+                      variant={
+                        incident.status === s || (s === "resolved" && resolving)
+                          ? "default"
+                          : "outline"
+                      }
                       aria-pressed={incident.status === s}
                       disabled={statusMutation.isPending || resolveMutation.isPending}
                       onClick={() => {
-                        if (s === "resolved" && incident.status !== "resolved") { setResolving(true); return; }
+                        if (s === "resolved" && incident.status !== "resolved") {
+                          setResolving(true);
+                          return;
+                        }
                         setResolving(false);
                         statusMutation.mutate({ status: s });
                       }}
                     >
-                      {statusMutation.isPending && statusMutation.variables?.status === s && <Loader2 className="animate-spin" />}
+                      {statusMutation.isPending && statusMutation.variables?.status === s && (
+                        <Loader2 className="animate-spin" />
+                      )}
                       {STATUS_LABELS[s]}
                     </Button>
                   ))}
@@ -148,26 +292,63 @@ function IncidentPage() {
                 {resolving && (
                   <form
                     className="mt-4 space-y-4 rounded-lg border p-4"
-                    onSubmit={(e) => { e.preventDefault(); resolveMutation.mutate(); }}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      resolveMutation.mutate();
+                    }}
                   >
-                    <PhotoPicker label="Resolution photo *" hint="Required. Show the fixed issue. JPEG, PNG or WebP, up to 5 MB." file={resPhoto} onChange={setResPhoto} disabled={resolveMutation.isPending} />
+                    <PhotoPicker
+                      label="Resolution photo *"
+                      hint="Required. Show the fixed issue. JPEG, PNG or WebP, up to 5 MB."
+                      file={resPhoto}
+                      onChange={setResPhoto}
+                      disabled={resolveMutation.isPending}
+                    />
                     <div>
                       <Label htmlFor="resolution-note">Resolution note (optional)</Label>
-                      <Textarea id="resolution-note" className="mt-1.5" rows={3} maxLength={500} value={resNote} onChange={(e) => setResNote(e.target.value)} disabled={resolveMutation.isPending} />
+                      <Textarea
+                        id="resolution-note"
+                        className="mt-1.5"
+                        rows={3}
+                        maxLength={500}
+                        value={resNote}
+                        onChange={(e) => setResNote(e.target.value)}
+                        disabled={resolveMutation.isPending}
+                      />
                     </div>
-                    {resolveMutation.isError && <p role="alert" className="text-sm text-destructive">Not marked resolved: {resolveMutation.error.message}</p>}
+                    {resolveMutation.isError && (
+                      <p role="alert" className="text-sm text-destructive">
+                        Not marked resolved: {resolveMutation.error.message}
+                      </p>
+                    )}
                     <div className="flex gap-2">
                       <Button type="submit" disabled={!resPhoto || resolveMutation.isPending}>
-                        {resolveMutation.isPending && <Loader2 className="animate-spin" />} Upload photo &amp; mark resolved
+                        {resolveMutation.isPending && <Loader2 className="animate-spin" />} Upload
+                        photo &amp; mark resolved
                       </Button>
-                      <Button type="button" variant="ghost" disabled={resolveMutation.isPending} onClick={() => { setResolving(false); resolveMutation.reset(); }}>Cancel</Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={resolveMutation.isPending}
+                        onClick={() => {
+                          setResolving(false);
+                          resolveMutation.reset();
+                        }}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </form>
                 )}
                 {statusMutation.isError ? (
-                  <p role="alert" className="mt-2 text-sm text-destructive">Status not saved: {statusMutation.error.message}</p>
+                  <p role="alert" className="mt-2 text-sm text-destructive">
+                    Status not saved: {statusMutation.error.message}
+                  </p>
                 ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">Saved to the shared database and shown on every device's dashboard. No sign-in: anyone using the demo can change status.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Authorized Resolver action: Changes are saved to the database and synced in
+                    real-time.
+                  </p>
                 )}
               </>
             )}
@@ -176,17 +357,31 @@ function IncidentPage() {
 
         <aside className="rounded-xl border bg-card p-6">
           <h2 className="font-semibold">Priority score</h2>
-          <p className="mt-2 text-5xl font-extrabold text-primary">{score.total}<span className="text-lg font-medium text-muted-foreground">/100</span></p>
+          <p className="mt-2 text-5xl font-extrabold text-primary">
+            {score.total}
+            <span className="text-lg font-medium text-muted-foreground">/100</span>
+          </p>
           <ul className="mt-5 space-y-3 text-sm">
             {rows.map((r) => (
               <li key={r.label}>
-                <div className="flex justify-between"><span>{r.label} <span className="text-muted-foreground">({r.weight}%)</span></span><span className="font-medium">{r.value.toFixed(1)}</span></div>
-                <div className="mt-1 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-accent" style={{ width: `${(r.value / r.weight) * 100}%` }} /></div>
+                <div className="flex justify-between">
+                  <span>
+                    {r.label} <span className="text-muted-foreground">({r.weight}%)</span>
+                  </span>
+                  <span className="font-medium">{r.value.toFixed(1)}</span>
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-accent"
+                    style={{ width: `${(r.value / r.weight) * 100}%` }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
           <p className="mt-5 text-xs text-muted-foreground">
-            A simple weighted heuristic, not AI. Resolved incidents get 0 for time; "nearby" counts other unresolved reports in the same area.
+            A simple weighted heuristic, not AI. Resolved incidents get 0 for time; "nearby" counts
+            other unresolved reports in the same area.
           </p>
         </aside>
       </div>
@@ -195,15 +390,28 @@ function IncidentPage() {
 }
 
 function StoredPhoto({ path, caption, alt }: { path: string; caption: string; alt: string }) {
-  const { data, isPending, error } = useQuery({ queryKey: ["photo", path], queryFn: () => getPhotoUrl(path), staleTime: 50 * 60_000 });
+  const { data, isPending, error } = useQuery({
+    queryKey: ["photo", path],
+    queryFn: () => getPhotoUrl(path),
+    staleTime: 50 * 60_000,
+  });
   return (
     <figure>
       <figcaption className="mb-1.5 text-sm font-medium">{caption}</figcaption>
       {data ? (
-        <img src={data} alt={alt} loading="lazy" className="aspect-[4/3] w-full rounded-lg border object-cover" />
+        <img
+          src={data}
+          alt={alt}
+          loading="lazy"
+          className="aspect-[4/3] w-full rounded-lg border object-cover"
+        />
       ) : (
         <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground">
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : `Photo unavailable${error ? `: ${error.message}` : ""}`}
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            `Photo unavailable${error ? `: ${error.message}` : ""}`
+          )}
         </div>
       )}
     </figure>

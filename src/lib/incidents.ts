@@ -38,13 +38,21 @@ export function mergeIncidents(seed: Incident[], shared: Incident[]): Incident[]
 
 /** Area key used for grouping: the part after the last comma ("Ward 12"), else the whole text. */
 export function areaOf(location: string): string {
-  const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
+  const parts = location
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
   return (parts.at(-1) ?? location.trim()) || "Unknown";
 }
 
 /* ---------------- Priority score (heuristic) ---------------- */
 
-const SEVERITY_FACTOR: Record<Severity, number> = { low: 0.25, medium: 0.5, high: 0.75, critical: 1 };
+const SEVERITY_FACTOR: Record<Severity, number> = {
+  low: 0.25,
+  medium: 0.5,
+  high: 0.75,
+  critical: 1,
+};
 
 export interface ScoreBreakdown {
   severity: number;
@@ -70,7 +78,9 @@ export function computeScore(incident: Incident, all: Incident[], now: number): 
   const days = Number.isFinite(created) ? (now - created) / 86_400_000 : 0;
   const time = incident.status === "resolved" ? 0 : clamp01(days / 14);
   const area = areaOf(incident.location);
-  const neighbours = all.filter((o) => o.id !== incident.id && o.status !== "resolved" && areaOf(o.location) === area).length;
+  const neighbours = all.filter(
+    (o) => o.id !== incident.id && o.status !== "resolved" && areaOf(o.location) === area,
+  ).length;
   const nearby = clamp01(neighbours / 4);
 
   const parts = {
