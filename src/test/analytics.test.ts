@@ -24,8 +24,8 @@ describe("duplicate candidate detection", () => {
       incident({ id: "B", title: "Burst water main near bus stop", location: "mg ROAD, ward 12", createdAt: "2026-10-29T08:00:00Z" }),
     ], { now: NOW });
     expect(candidates).toHaveLength(1);
-    expect(candidates[0].score).toBeGreaterThanOrEqual(70);
-    expect(candidates[0].reasons).toHaveLength(4);
+    expect(candidates[0]!.score).toBeGreaterThanOrEqual(70);
+    expect(candidates[0]!.reasons).toHaveLength(4);
   });
 
   it("does not flag different categories, different wards, or old reports", () => {
